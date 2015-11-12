@@ -1,1 +1,1 @@
-# sensor-pipeline
+# Nifi Sensor Pipeline
