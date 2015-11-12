@@ -41,5 +41,3 @@ if [ "${GROUP_ID}" != "" ]; then
     
     tail -F ${NIFI_HOME}/logs/nifi-app.log
 fi
-
-exit 0
