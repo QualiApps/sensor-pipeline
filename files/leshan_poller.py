@@ -4,9 +4,14 @@ from json import loads, dumps
 from requests import get, codes
 from os import sep, path
 from urlparse import urlunparse
+from ipso import IPSO_OBJECTS as ipso
 
 
 class LeshanPoller(object):
+    '''
+	Retrieves an information from lwm2m server
+	and applies some filtering
+    '''
     __slots__ = ["_LeshanPoller__data", "ignore_obj"]
 
     scheme = "http"
@@ -23,10 +28,13 @@ class LeshanPoller(object):
 	    Init Leshan url
 	"""
 	url = []
-	service = loads(input)
+	try:
+	    service = loads(input)
 	
-	parts = (self.scheme, ":".join((service["ServiceAddress"], str(service['ServicePort']))), self.api_url, "", "", "")
-	url.append(urlunparse(parts))
+	    parts = (self.scheme, ":".join((service["ServiceAddress"], str(service['ServicePort']))), self.api_url, "", "", "")
+	    url.append(urlunparse(parts))
+	except:
+	    pass
 	
 	return url
 
@@ -42,9 +50,34 @@ class LeshanPoller(object):
 	    for device in devices:
 	        for object in device['objectLinks']:
 		    if str(object['objectId']) not in self.ignore_obj:
-		        values = object_values(url, device['endpoint'], object['url'])
-                        self.update_metadata(values, device, object)
-	                self.__data.append(values)
+		        values = object_values(url, device['endpoint'], object)
+			if values:
+                            self.update_metadata(values, device, object)
+	                    self.__data.append(values)
+
+    @staticmethod
+    def get_ipso(obj_id):
+	'''
+	    Gets an IPSO object
+	'''
+	ipso_obj = ipso.get(obj_id)
+	return ipso_obj if ipso_obj else ()
+
+    @staticmethod
+    def get_res_attr(res_id, attrib):
+	'''
+	    Finds particular resource
+	    :param res_id - id resource
+	    :param attrib - available resources
+	    :return dict
+	'''
+	response = None
+	for attr in attrib:
+	    if int(attr['id']) == res_id:
+		response = attr
+		break
+
+	return response
 
     @staticmethod
     def get_leshan_instance(urls):
@@ -58,8 +91,7 @@ class LeshanPoller(object):
 	    if response.status_code == codes.ok:
 	        yield url, loads(response.text)
 
-    @staticmethod
-    def get_object_values(url, endpoint, obj_url):
+    def get_object_values(self, url, endpoint, obj):
 	'''
 	    Retrieves resources from lwm2m server
 	    :param url - lwm2m url
@@ -67,13 +99,26 @@ class LeshanPoller(object):
 	    :param obj_url - resource path (/object_id/instance_id)
 	    :return json
 	'''
-	object_values = None
+	object_values = {}
+	resources = []
+	
+	ipso_obj = self.get_ipso(obj['objectId'])
+	if ipso_obj:
+	    for res_id in ipso_obj['required']:
+	        request_url = url + sep + endpoint + obj['url'] + sep + str(res_id)
+	        response = get(request_url)
 
-	request_url = url + sep + endpoint + obj_url
-        response = get(request_url)
-
-        if response.status_code == codes.ok:
-            object_values = loads(response.text)
+                if response.status_code == codes.ok:
+		    content = loads(response.text)
+		    if content:
+		        res_attribs = self.get_res_attr(res_id, ipso_obj['attrib'])
+		        content = content.get('content')
+		        content['title'] = res_attribs['description']
+		        resources.append(content)
+	    else:
+	        if resources:
+		    object_values['resources'] = resources
+		    object_values['title'] = ipso_obj['title']
 
 	return object_values
 
@@ -90,7 +135,6 @@ class LeshanPoller(object):
 	values['registrationDate'] = device['registrationDate']
 	values['objectId'] = object['objectId']
 	values['objectInstanceId'] = object['objectInstanceId']
-	del values['status']
 
     @property
     def data(self):

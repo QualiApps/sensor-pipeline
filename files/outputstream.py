@@ -11,7 +11,7 @@ class InfluxDB(object):
 	self.__data = []
 
     def create(self, in_data):
-	raw_resources = in_data.get('content').get('resources')
+	raw_resources = in_data.get('resources')
 	for resource in raw_resources:
 	    tags = {
 	        "endpoint": in_data.get('endpoint'),

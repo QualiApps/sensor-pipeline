@@ -456,7 +456,7 @@ IPSO_OBJECTS = {
         ]
     },
     5: {
-        "required": (3,),
+        "required": (),
         "title": "Firmware Update",
         "attrib": [
             {
@@ -1028,7 +1028,7 @@ IPSO_OBJECTS = {
         ]
     },
     3303: {
-        "required": (),
+        "required": (5700,),
         "title": "Temperature Sensor",
         "attrib": [
             {
@@ -1090,7 +1090,7 @@ IPSO_OBJECTS = {
         ]
     },
     3304: {
-        "required": (),
+        "required": (5700,),
         "title": "Humidity Sensor",
         "attrib": [
             {
