@@ -95,7 +95,7 @@ class Processor(object):
 	    :return True | False
 	'''
 	invoke = getattr(operator, rule.get("operator"))
-	args = (rule.get("value"), value)
+	args = (value, rule.get("value"))
 	return invoke(*args)
 
     def get_config(self):
