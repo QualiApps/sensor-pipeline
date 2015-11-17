@@ -56,7 +56,7 @@ class Processor(object):
 				"current_value": resource['value'],
 				"threshold": rule['value'],
 				"handler": rule['handler'],
-				"args": rule['args']
+				"args": rule['args'].split(";") if rule['args'] else []
 			    })
 	except Exception as error:
 	    self.add_error(error.__str__())
