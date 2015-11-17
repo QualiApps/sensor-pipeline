@@ -55,7 +55,8 @@ class Processor(object):
 				"resource": res_id,
 				"current_value": resource['value'],
 				"threshold": rule['value'],
-				"handler": rule['handler']
+				"handler": rule['handler'],
+				"args": rule['args']
 			    })
 	except Exception as error:
 	    self.add_error(error.__str__())
