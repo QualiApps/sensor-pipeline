@@ -5,6 +5,7 @@ from requests import get, codes
 from os import sep, path
 from urlparse import urlunparse
 from ipso import IPSO_OBJECTS as ipso
+import time
 
 
 class LeshanPoller(object):
@@ -12,13 +13,15 @@ class LeshanPoller(object):
 	Retrieves an information from lwm2m server
 	and applies some filtering
     '''
-    __slots__ = ["_LeshanPoller__data", "ignore_obj"]
+    __slots__ = ["_LeshanPoller__data", "ignore_obj", "device"]
 
     scheme = "http"
     api_url = "api/clients"
     cfg = "leshan.cfg"
 
     def __init__(self):
+        # ipso device id
+        self.device = 3
 	self.__data = []
         self.ignore_obj = self.get_except_obj()
 	self.get_data()
@@ -30,12 +33,12 @@ class LeshanPoller(object):
 	url = []
 	try:
 	    service = loads(input)
-	
+
 	    parts = (self.scheme, ":".join((service["ServiceAddress"], str(service['ServicePort']))), self.api_url, "", "", "")
 	    url.append(urlunparse(parts))
 	except:
 	    pass
-	
+
 	return url
 
     def get_data(self):
@@ -96,29 +99,35 @@ class LeshanPoller(object):
 	    Retrieves resources from lwm2m server
 	    :param url - lwm2m url
 	    :param endpoint - client name
-	    :param obj_url - resource path (/object_id/instance_id)
+	    :param obj - resource obj
 	    :return json
 	'''
 	object_values = {}
 	resources = []
-	
-	ipso_obj = self.get_ipso(obj['objectId'])
-	if ipso_obj:
-	    for res_id in ipso_obj['required']:
-	        request_url = url + sep + endpoint + obj['url'] + sep + str(res_id)
-	        response = get(request_url)
+        device_time = []
+        dtime = None
 
-                if response.status_code == codes.ok:
-		    content = loads(response.text)
-		    if content:
-		        res_attribs = self.get_res_attr(res_id, ipso_obj['attrib'])
-		        content = content.get('content')
-		        content['title'] = res_attribs['description']
-		        resources.append(content)
+        ipso_obj = self.get_ipso(obj['objectId'])
+	if ipso_obj:
+            instance_path = url + sep + endpoint + obj['url'] + sep
+
+	    for res_id in ipso_obj['required']:
+                # get device time
+                if not dtime:
+                    dtime = self._get_device_time(url + sep + endpoint)
+
+	        request_url = instance_path + str(res_id)
+                resource = self._get_resource(request_url)
+                if resource:
+                    res_attribs = self.get_res_attr(res_id, ipso_obj['attrib'])
+                    resource['title'] = res_attribs['description']
+	            resources.append(resource)
 	    else:
 	        if resources:
 		    object_values['resources'] = resources
 		    object_values['title'] = ipso_obj['title']
+                    object_values['time'] = dtime
+
 
 	return object_values
 
@@ -159,7 +168,68 @@ class LeshanPoller(object):
             ids = except_ids.split(',')
 
 	return ids
-	
+
+    def _get_device_time(self, path):
+        '''
+            Gets a device time
+            If device does not support a time callback
+            to get local time
+            :param path - url to the time resource
+            :return timestamp - int, in nanosec
+        '''
+        nano = 10**9
+        timestamp = None
+        # gets device time and utc offset (13 and 14 respectively)
+        values = []
+        instance_url = '/%s/%s/' % (str(self.device), '0')
+        for res_id in ('13', '14'):
+            resource = self._get_resource(path + instance_url + res_id)
+            if resource:
+                values.append(resource.get('value'))
+        else:
+            if values:
+                # device time
+                timestamp = self._to_timestamp(values) * nano
+            else:
+                # local time
+                timestamp = int(time()) * nano
+
+        return timestamp
+
+    @staticmethod
+    def _to_timestamp(dtime):
+        '''
+            Converts date to timestamp
+            :param dtime - tuple (date, utc_offset)
+            :return int
+        '''
+        date_time, offset = dtime
+        sec = int(time.mktime(time.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')))
+        delta = (int(offset[-5:-3]) * 60 + int(offset[-2:])) * 60
+
+        if offset[0] == '-':
+            delta = -delta
+
+        return sec + delta
+
+    def _get_resource(self, path):
+        '''
+            Retrieves particular resource
+            by path
+            :param path - resource path
+            :return json
+        '''
+        content = None
+        try:
+            response = get(path)
+            if response and response.status_code == codes.ok:
+                response = loads(response.text)
+                if response:
+                    content = response.get('content')
+        except:
+            pass
+
+        return content
 
 if __name__ == "__main__":
     print LeshanPoller()

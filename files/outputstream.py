@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from sys import argv
-from time import time
 from json import loads
 from syslog import syslog, LOG_ERR
 
@@ -27,7 +26,7 @@ class InfluxDB(object):
 	        	self.convert_name(in_data.get('title')),
 			tags,
 			values,
-			int(time()) * 1000000000
+			in_data.get('time')
 		    )
 
 	    self.__data.append(point)
@@ -67,3 +66,4 @@ if __name__ == "__main__":
 	        print OutputStream(construct, loads(input_data)).output()
 	except Exception as error:
 	    syslog(LOG_ERR, "OutputStream processing: " + str(error))
+
