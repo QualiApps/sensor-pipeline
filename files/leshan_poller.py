@@ -179,10 +179,10 @@ class LeshanPoller(object):
         '''
         nano = 10**9
         timestamp = None
-        # gets device time and utc offset (13 and 14 respectively)
+        # gets device time (res id 13)
         values = []
         instance_url = '/%s/%s/' % (str(self.device), '0')
-        for res_id in ('13', '14'):
+        for res_id in ('13',):
             resource = self._get_resource(path + instance_url + res_id)
             if resource:
                 values.append(resource.get('value'))
@@ -200,17 +200,10 @@ class LeshanPoller(object):
     def _to_timestamp(dtime):
         '''
             Converts date to timestamp
-            :param dtime - tuple (date, utc_offset)
+            :param dtime - date, utc
             :return int
         '''
-        date_time, offset = dtime
-        sec = int(time.mktime(time.strptime(date_time, '%Y-%m-%dT%H:%M:%SZ')))
-        delta = (int(offset[-5:-3]) * 60 + int(offset[-2:])) * 60
-
-        if offset[0] == '-':
-            delta = -delta
-
-        return sec + delta
+        return int(time.mktime(time.strptime(dtime.pop(), '%Y-%m-%dT%H:%M:%SZ')))
 
     def _get_resource(self, path):
         '''
