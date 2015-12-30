@@ -7,7 +7,7 @@ MAINTAINER Yury Kavaliou <yury_kavaliou@epam.com>
 
 ENV NIFI_DISTR		http://mirror.cc.columbia.edu/pub/software/apache/nifi
 ENV NIFI_HOME		/opt/nifi
-ENV NIFI_VERSION	0.3.0
+ENV NIFI_VERSION	0.4.1
 ENV NIFI_SCRIPTS	/opt/nifi/sensor
 
 RUN yum install -y java-1.8.0-openjdk-devel tar
