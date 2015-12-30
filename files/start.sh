@@ -19,7 +19,7 @@ function get_group_id {
 # Start the Nifi
 ${NIFI_HOME}/bin/nifi.sh start
 # Waiting before the Nifi-api will be available
-sleep 40
+sleep 90
 
 # Create a proccess group
 # 1 - group name
