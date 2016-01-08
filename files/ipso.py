@@ -362,7 +362,7 @@ IPSO_OBJECTS = {
         ]
     },
     4: {
-        "required": (),
+        "required": (2,),
         "title": "Connectivity Monitoring",
         "attrib": [
             {

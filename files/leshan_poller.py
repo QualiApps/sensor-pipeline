@@ -52,7 +52,8 @@ class LeshanPoller(object):
 	for url, devices in leshan_instances(urls):
 	    for device in devices:
 	        for object in device['objectLinks']:
-		    if str(object['objectId']) not in self.ignore_obj:
+	            oid = object.get('objectId', None)
+		    if obj is not None and str(oid) not in self.ignore_obj:
 		        values = object_values(url, device['endpoint'], object)
 			if values:
                             self.update_metadata(values, device, object)
@@ -192,7 +193,7 @@ class LeshanPoller(object):
                 timestamp = self._to_timestamp(values) * nano
             else:
                 # local time
-                timestamp = int(time()) * nano
+                timestamp = int(time.time()) * nano
 
         return timestamp
 
